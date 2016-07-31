@@ -2,13 +2,12 @@ package com.fdp.example;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.ExceptionDepthComparator;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -16,15 +15,37 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.io.IOException;
 import java.util.*;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+
 /**
  * @author filippo di pisa
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-public class DummyServiceTest {
+@Slf4j
+public class JSONUtilsTest {
+
 
 
 	@Test
-	public void testName() throws Exception {
+	public void should_parse_json_into_list_of_unique_paths() throws Exception {
+		String jsonFileAsAString = loadJsonFileAsAString("complex_object.json");
+		JSONObject jsonObject = new JSONObject(jsonFileAsAString);
+		List<String> parse = JSONUtils.convertToListOfProperties(jsonObject,
+																 new ArrayList<>(),
+																 null);
+		assertThat(parse, hasSize(13));
+
+		String jsonFileAsAString1 = loadJsonFileAsAString("complex_object1.json");
+		JSONObject jsonObject1 = new JSONObject(jsonFileAsAString1);
+		List<String> parse1 = JSONUtils.convertToListOfProperties(jsonObject1,
+																 new ArrayList<>(),
+																 null);
+		assertThat(parse1, hasSize(18));
+	}
+
+	@Test
+	public void should_retrieve_a_json_porperty_using_json_path() throws Exception {
 		String jsonFileAsAString = loadJsonFileAsAString("complex_object.json");
 		Object read = JsonPath.read(jsonFileAsAString,
 									"$..street");
@@ -33,49 +54,14 @@ public class DummyServiceTest {
 		DocumentContext parse1 = JsonPath.parse(jsonFileAsAString);
 
 		JSONObject jsonObject = new JSONObject(jsonFileAsAString);
-		Map emptyMap = Collections.EMPTY_MAP;
-		List<String> parse = parse(jsonObject,
-								   new ArrayList<>(),
-								   null);
-		int a = 1;
+		List<String> parse = JSONUtils.convertToListOfProperties(jsonObject,
+																 new ArrayList<>(),
+																 null);
+
 
 	}
 
-	private List<String> parse(JSONObject json,
-							   List<String> list,
-							   String existingKey) {
-		Iterator<String> keys = json.keys();
-		while (keys.hasNext()) {
-			String key = keys.next();
-			String keyToAdd = key;
-			if (existingKey != null) {
-				StringBuilder sb = new StringBuilder(existingKey);
-				sb.append(".")
-				  .append(key);
-				keyToAdd = sb.toString();
-			}
-			try {
-				JSONObject value = json.getJSONObject(key);
-				parse(value,
-					  list,
-					  key);
-			} catch (Exception e) {
-				try {
-					JSONArray jsonArray = json.getJSONArray(key);
-					JSONObject value1 = (JSONObject) jsonArray.get(0);
-					parse(value1,
-						  list,
-						  key);
-				} catch (Exception e1){
 
-					list.add(keyToAdd);
-				}
-			}
-
-		}
-
-		return list;
-	}
 
 	@Autowired
 	private ResourceLoader resourceLoader;
